@@ -1,0 +1,85 @@
+#!/usr/bin/python
+
+import os
+import enrol
+import sys
+from optparse import OptionParser
+#set directory to current working directory
+directory = os.path.dirname(__file__)
+#if enrol exists set it to enrol_directory
+if "ENROLDIR" in os.environ:
+    if os.path.exists(os.environ["ENROLDIR"]):
+        enrol_directory = "ENROLDIR"
+#if not in os.environ, checks if there is a folder called data
+elif os.path.exists(os.path.join(directory,'data')):
+    enrol_directory = os.path.join(directory,'data')
+
+else:
+    print "The directory supplied does not exist, GOODBYE"
+    sys.exit()  
+   
+e = enrol.Enrol(enrol_directory)
+
+def main():
+    """Sets option parser, by selecting -h user is able to use certain 
+        functions. This main method can either return all subject details, or
+            if selected with a student number returns all details of the 
+                students courses."""
+    #Sets a command line option menu 
+    parser = OptionParser()
+    parser.add_option("-s","--student", dest="studentNumber", 
+                    type="string", default=False, 
+                        help="Displays Class Details for Enrolled Student")
+    
+    (options, args) = parser.parse_args()
+    #takes student number as argument parameter
+    studentNumber = options.studentNumber
+    #called the specified function on run
+    if(studentNumber):
+        studentCourses(studentNumber)
+    else:
+        subjects()
+       
+    
+def subjects():
+    """Returns all subjects details such as code, name, classes and students
+            enrolled"""
+    #sets class size to zero and return all subject codes
+    class_size = 0
+    subjectDetails = e.subjects()
+    #iterates through each subject code and returns a name for that subject
+    print 'Subjects are:'
+    for subjectCode in subjectDetails:
+        subject = e.subject_name(subjectCode)
+        
+        classes = e.classes(subjectCode)
+        if len(classes) > 1:
+            
+            for eachClass in classes:
+                
+                classInfo = e.class_info(eachClass)
+                class_size += len(classInfo[4])
+            
+            print (subjectCode+'\t'+ subject+'\tclasses: '+ 
+                        str(len(classes))+'\tstudents: '+str(class_size))
+        
+        else:
+            for eachClass in classes:
+                classInfo = e.class_info(eachClass)
+                
+            print (subjectCode+'\t'+ subject+'\tclasses: '+ str(len(classes))+
+                        '\tstudents: '+str(len(classInfo[4])))
+
+def studentCourses(studentID):
+    """Returns the course details for the enrolled student"""
+    
+    student_classes = e.check_student(studentID)
+    print "Classes and Times for student: " + studentID
+    for eachClass in student_classes:
+        
+        class_information = e.class_info(eachClass)
+        subject_name = e.subject_name(class_information[0])
+        print (eachClass+' \t '+subject_name+'\t'+class_information[1]+
+                        ' @ '+class_information[2])
+
+main()
